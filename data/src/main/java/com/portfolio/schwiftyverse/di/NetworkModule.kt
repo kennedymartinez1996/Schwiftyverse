@@ -30,13 +30,13 @@ object NetworkModule {
     // Provides a singleton instance of Retrofit.
     @Provides
     @Singleton
-    fun provideRetrofit(moshi: Moshi): Retrofit {
+    fun provideRetrofit(moshi: Moshi, @BaseUrl baseUrl: String): Retrofit {
         // Logger to see request/response bodies in Logcat, useful for debugging.
         val logger = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
         val client = OkHttpClient.Builder().addInterceptor(logger).build()
 
         return Retrofit.Builder()
-            .baseUrl("https://rickandmortyapi.com/api/")
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
