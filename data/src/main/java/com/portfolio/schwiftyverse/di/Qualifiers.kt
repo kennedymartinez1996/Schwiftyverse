@@ -3,4 +3,11 @@ package com.portfolio.schwiftyverse.di
 import javax.inject.Qualifier
 
 @Qualifier
-@Retention(AnnotationRetention.BINARY)annotation class BaseUrl
+@Retention(AnnotationRetention.BINARY)
+annotation class BaseUrl
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DefaultUnknown
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DefaultImage
