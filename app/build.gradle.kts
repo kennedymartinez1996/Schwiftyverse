@@ -64,12 +64,21 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    // HILT
+    // Hilt
     implementation(libs.hilt.android)
     // Use ksp for the Hilt compiler.
     ksp(libs.hilt.compiler)
 
-    // MODULES
+    //Hilt integration for Compose Navigation
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    // Lifecycle utilities for Compose, including collectAsStateWithLifecycle
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Coil - For loading images from the network in Compose
+    implementation(libs.coil.compose)
+
+    // Modules
     implementation(project(":domain"))
     implementation(project(":data"))
 }
