@@ -1,8 +1,5 @@
 package com.portfolio.schwiftyverse.ui.characterlist
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,16 +13,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -34,16 +34,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.portfolio.schwiftyverse.R
 import com.portfolio.schwiftyverse.model.CharacterModel
 import com.portfolio.schwiftyverse.ui.theme.CardBackgroundGrayTransparent
+import com.portfolio.schwiftyverse.ui.theme.PortalGreen
 
 /**
  * The main screen composable that observes the ViewModel's state and delegates
@@ -55,37 +59,61 @@ fun CharacterListScreen(
     viewModel: CharacterListViewModel = hiltViewModel(),
     onCharacterClick: (Int) -> Unit
 ) {
-    // Collect the state from the ViewModel in a lifecycle-aware manner.
-    // The 'by' keyword unwraps the State<T> into a T directly.
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        // 1. Show loading or error states immediately, WITHOUT animation.
-        // These are placed first, directly inside the Box.
-        if (state.isLoading) {
-            CircularProgressIndicator()
-        } else if (state.error != null) {
-            Text(text = stringResource(id = state.error!!))
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { viewModel.onSearchQueryChanged(it) },
+            keyboardOptions = KeyboardOptions(
+                // This tells the keyboard to show a "Search" icon instead of "Enter".
+                imeAction = ImeAction.Search
+            ),
+            keyboardActions = KeyboardActions(
+                // This defines what happens when the "Search" button is pressed.
+                onSearch = { viewModel.triggerSearch() }
+            ),
+            singleLine = true,
+            label = { Text(stringResource(R.string.text_search_characters)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = PortalGreen,
+                focusedLabelColor = PortalGreen,
+                cursorColor = PortalGreen
+            )
+        )
 
-        // 2. Animate ONLY the content that appears on success.
-        // This will fade in on top of the (now empty) screen once loading is done.
-        AnimatedVisibility(
-            // Condition: Show this only when not loading, no error, and the list is ready.
-            visible = !state.isLoading && state.error == null && state.characters.isNotEmpty(),
-            // Define the fade-in animation.
-            enter = fadeIn(animationSpec = tween(durationMillis = 1000))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            // The actual list of characters.
             CharacterList(
                 characters = state.characters,
-                isLoadingMore = state.isLoadingMore,
+                canPaginate = state.canPaginate,
                 onCharacterClick = onCharacterClick,
-                onLoadMore = { viewModel.loadCharacters() }
+                onLoadMoreCharacter = {
+                    viewModel.loadCharacters(query = searchQuery)
+                }
             )
+            when {
+                state.isLoading -> {
+                    CircularProgressIndicator()
+                }
+
+                state.error != null -> {
+                    Text(
+                        text = stringResource(R.string.error_search_failed),
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -98,9 +126,9 @@ fun CharacterListScreen(
 @Composable
 private fun CharacterList(
     characters: List<CharacterModel>,
-    isLoadingMore: Boolean,
+    canPaginate: Boolean,
     onCharacterClick: (Int) -> Unit,
-    onLoadMore: () -> Unit,
+    onLoadMoreCharacter: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val gridState = rememberLazyGridState()
@@ -116,25 +144,9 @@ private fun CharacterList(
         items(items = characters, key = { character -> character.id }) { character ->
             CharacterListItem(
                 character = character,
-                onClick = { onCharacterClick(character.id) },
-                modifier = Modifier.animateItemPlacement()
+                onClick = { onCharacterClick(character.id) }
             )
 
-        }
-        if (isLoadingMore) {
-            item(
-                // Make this item span all columns
-                span = { GridItemSpan(maxLineSpan) }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
         }
     }
     val endOfListReached by remember {
@@ -143,8 +155,8 @@ private fun CharacterList(
         }
     }
     LaunchedEffect(endOfListReached) {
-        if (endOfListReached) {
-            onLoadMore()
+        if (endOfListReached && canPaginate) {
+            onLoadMoreCharacter()
         }
     }
 }

@@ -4,5 +4,8 @@
     <string name="default_unknown">Unknown</string>
     <string name="default_image_url">""</string>
     <string name="error_unknown">An unknown error occurred</string>
+    <string name="error_list_unknown">An unknown error geting a list of characters</string>
     <string name="content_description_back">Back</string>
+    <string name="error_search_failed">No results found.</string>
+    <string name="text_search_characters">Search characters...</string>
 </resources>
