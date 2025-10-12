@@ -78,6 +78,8 @@ dependencies {
     // Coil - For loading images from the network in Compose
     implementation(libs.coil.compose)
 
+    implementation(libs.androidx.splashscreen)
+
     // Modules
     implementation(project(":domain"))
     implementation(project(":data"))
