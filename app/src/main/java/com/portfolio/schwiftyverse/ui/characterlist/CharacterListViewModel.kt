@@ -23,25 +23,37 @@ class CharacterListViewModel @Inject constructor(
     // Public immutable state flow that the UI can observe.
     val uiState: StateFlow<CharacterListState> = _uiState.asStateFlow()
 
+    private var currentPage = 1
+
     // This block is executed when the ViewModel is first created.
     init {
         loadCharacters()
     }
 
     // Function to fetch characters from the use case.
-    private fun loadCharacters() {
+    fun loadCharacters() {
+        if (_uiState.value.isLoading || _uiState.value.isLoadingMore) return
         // Set the state to loading.
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update {
+            if (currentPage == 1) it.copy(isLoading = true)
+            else it.copy(isLoadingMore = true)
+        }
 
         // Launch a coroutine in the ViewModel's scope.
         // This ensures the job is cancelled if the ViewModel is cleared.
         viewModelScope.launch {
-            getCharactersUseCase()
-                .onSuccess { characters ->
+            getCharactersUseCase(page = currentPage)
+                .onSuccess { newCharacters ->
                     // On success, update the state with the character list.
                     _uiState.update {
-                        it.copy(isLoading = false, characters = characters)
+                        it.copy(
+                            isLoading = false,
+                            isLoadingMore = false, // Reset both loading states
+                            // This is the key: add the new list to the old one
+                            characters = it.characters + newCharacters
+                        )
                     }
+                    currentPage++
                 }
                 .onFailure { throwable ->
                     // On failure, update the state with an error message.

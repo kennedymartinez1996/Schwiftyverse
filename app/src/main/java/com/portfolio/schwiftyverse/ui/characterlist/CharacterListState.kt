@@ -7,6 +7,7 @@ import com.portfolio.schwiftyverse.model.CharacterModel
 data class CharacterListState(
     // Indicates if the data is currently being loaded.
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     // Holds the list of characters on success.
     val characters: List<CharacterModel> = emptyList(),
     // Holds an error message on failure.

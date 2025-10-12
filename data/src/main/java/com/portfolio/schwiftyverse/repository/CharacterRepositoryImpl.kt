@@ -14,9 +14,9 @@ class CharacterRepositoryImpl @Inject constructor(
     @DefaultImage private val defaultImage: String
 ) : CharacterRepository {
 
-    override suspend fun getCharacters(): Result<List<CharacterModel>> {
+    override suspend fun getCharacters(page: Int): Result<List<CharacterModel>> {
         return try {
-            val response = apiService.getCharacters()
+            val response = apiService.getCharacters(page = page)
             val characters = response.results.map {
                 it.toDomainModel(
                     defaultUnknown = defaultUnknown,

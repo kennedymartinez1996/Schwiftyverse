@@ -4,10 +4,11 @@ import com.portfolio.schwiftyverse.dto.ApiResponseDto
 import com.portfolio.schwiftyverse.dto.CharacterDto
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     @GET("character")
-    suspend fun getCharacters(): ApiResponseDto
+    suspend fun getCharacters(@Query("page") page: Int): ApiResponseDto
 
     @GET("character/{id}")
     suspend fun getCharacterById(@Path("id") id: Int): CharacterDto

@@ -3,6 +3,7 @@ package com.portfolio.schwiftyverse.ui.characterlist
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,12 +11,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,7 +27,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,7 +80,12 @@ fun CharacterListScreen(
             enter = fadeIn(animationSpec = tween(durationMillis = 1000))
         ) {
             // The actual list of characters.
-            CharacterList(characters = state.characters, onCharacterClick = onCharacterClick)
+            CharacterList(
+                characters = state.characters,
+                isLoadingMore = state.isLoadingMore,
+                onCharacterClick = onCharacterClick,
+                onLoadMore = { viewModel.loadCharacters() }
+            )
         }
     }
 }
@@ -82,22 +94,57 @@ fun CharacterListScreen(
  * Displays the list of characters using a LazyColumn.
  */
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CharacterList(
     characters: List<CharacterModel>,
+    isLoadingMore: Boolean,
     onCharacterClick: (Int) -> Unit,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val gridState = rememberLazyGridState()
     // Use LazyVerticalGrid for a two-column layout.
     LazyVerticalGrid(
         columns = GridCells.Fixed(3), // Defines 2 columns
+        state = gridState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(characters) { character ->
-            CharacterListItem(character = character, onClick = { onCharacterClick(character.id) })
+        items(items = characters, key = { character -> character.id }) { character ->
+            CharacterListItem(
+                character = character,
+                onClick = { onCharacterClick(character.id) },
+                modifier = Modifier.animateItemPlacement()
+            )
+
+        }
+        if (isLoadingMore) {
+            item(
+                // Make this item span all columns
+                span = { GridItemSpan(maxLineSpan) }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+    val endOfListReached by remember {
+        derivedStateOf {
+            gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index == gridState.layoutInfo.totalItemsCount - 1
+        }
+    }
+    LaunchedEffect(endOfListReached) {
+        if (endOfListReached) {
+            onLoadMore()
         }
     }
 }

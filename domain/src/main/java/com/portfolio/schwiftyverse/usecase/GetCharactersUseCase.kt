@@ -8,5 +8,6 @@ import com.portfolio.schwiftyverse.repository.CharacterRepository
 class GetCharactersUseCase(
     private val repository: CharacterRepository
 ) {
-    suspend operator fun invoke(): Result<List<CharacterModel>> = repository.getCharacters()
+    suspend operator fun invoke(page: Int): Result<List<CharacterModel>> =
+        repository.getCharacters(page = page)
 }
