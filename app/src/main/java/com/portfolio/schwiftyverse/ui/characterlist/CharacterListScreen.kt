@@ -45,7 +45,8 @@ import com.portfolio.schwiftyverse.ui.theme.CardBackgroundGrayTransparent
 @Composable
 fun CharacterListScreen(
     // Get the ViewModel instance provided by Hilt.
-    viewModel: CharacterListViewModel = hiltViewModel()
+    viewModel: CharacterListViewModel = hiltViewModel(),
+    onCharacterClick: (Int) -> Unit
 ) {
     // Collect the state from the ViewModel in a lifecycle-aware manner.
     // The 'by' keyword unwraps the State<T> into a T directly.
@@ -72,7 +73,7 @@ fun CharacterListScreen(
             enter = fadeIn(animationSpec = tween(durationMillis = 1000))
         ) {
             // The actual list of characters.
-            CharacterList(characters = state.characters)
+            CharacterList(characters = state.characters, onCharacterClick = onCharacterClick)
         }
     }
 }
@@ -84,6 +85,7 @@ fun CharacterListScreen(
 @Composable
 private fun CharacterList(
     characters: List<CharacterModel>,
+    onCharacterClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Use LazyVerticalGrid for a two-column layout.
@@ -95,7 +97,7 @@ private fun CharacterList(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(characters) { character ->
-            CharacterListItem(character = character)
+            CharacterListItem(character = character, onClick = { onCharacterClick(character.id) })
         }
     }
 }
@@ -107,11 +109,12 @@ private fun CharacterList(
 @Composable
 private fun CharacterListItem(
     character: CharacterModel,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Use a Card for a nicer container with elevation and a clickable modifier.
     Card(
-        modifier = modifier.clickable { /* We will add navigation here */ },
+        modifier = modifier.clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = CardBackgroundGrayTransparent

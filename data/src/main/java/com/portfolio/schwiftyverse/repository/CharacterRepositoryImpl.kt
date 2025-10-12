@@ -28,4 +28,14 @@ class CharacterRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun getCharacterById(id: Int): Result<CharacterModel> {
+        return try {
+            val dto = apiService.getCharacterById(id)
+            val character = dto.toDomainModel(defaultUnknown, defaultImage)
+            Result.success(character)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -10,6 +10,9 @@ fun CharacterDto.toDomainModel(defaultUnknown: String, defaultImageUrl: String):
         name = name ?: defaultUnknown,
         status = status ?: defaultUnknown,
         species = species ?: defaultUnknown,
-        imageUrl = image ?: defaultImageUrl
+        imageUrl = image ?: defaultImageUrl,
+        gender = gender ?: defaultUnknown,
+        origin = origin?.name ?: defaultUnknown,
+        lastKnownLocation = location?.name ?: defaultUnknown
     )
 }

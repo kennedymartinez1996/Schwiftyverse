@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.portfolio.schwiftyverse.ui.AppNavigation
 import com.portfolio.schwiftyverse.ui.characterlist.CharacterListScreen
 import com.portfolio.schwiftyverse.ui.theme.SchwiftyverseTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -51,7 +52,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 if (!isLoading) {
-                    CharacterListScreen()
+                    AppNavigation()
                 }
             }
         }

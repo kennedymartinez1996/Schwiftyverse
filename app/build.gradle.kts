@@ -80,6 +80,11 @@ dependencies {
 
     implementation(libs.androidx.splashscreen)
 
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.compose.material.icons.extended)
+
+
     // Modules
     implementation(project(":domain"))
     implementation(project(":data"))
