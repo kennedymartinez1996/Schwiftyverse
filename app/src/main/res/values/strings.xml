@@ -3,4 +3,25 @@
     <string name="default_unknown">Unknown</string>
     <string name="default_image_url">""</string>
     <string name="error_unknown">An unknown error occurred</string>
+    <string name="filter_label_status">Status</string>
+    <string name="filter_label_gender">Gender</string>
+    <string name="filter_option_all">All</string>
+    <string name="filter_option_alive">Alive</string>
+    <string name="filter_option_dead">Dead</string>
+    <string name="filter_option_unknown">Unknown</string>
+    <string name="filter_option_female">Female</string>
+    <string name="filter_option_male">Male</string>
+    <string name="filter_option_genderless">Genderless</string>
+    <string name="filter_api_empty">""</string>
+    <string name="filter_api_all">All</string>
+    <string name="filter_api_alive">Alive</string>
+    <string name="filter_api_dead">Dead</string>
+    <string name="filter_api_unknown">Unknown</string>
+    <string name="filter_api_female">Female</string>
+    <string name="filter_api_male">Male</string>
+    <string name="filter_api_genderless">Genderless</string>
+    <string name="filter_label_species">Species</string>
+    <string name="filter_label_type">Type</string>
+    <string name="button_search">Search</string>
+    <string name="text_advanced_filters">Advanced Filters</string>
 </resources>

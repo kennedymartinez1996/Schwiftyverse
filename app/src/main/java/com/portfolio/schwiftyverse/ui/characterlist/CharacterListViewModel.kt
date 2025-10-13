@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// @HiltViewModel tells Hilt that this is a ViewModel and its dependencies should be injected.
+
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class CharacterListViewModel @Inject constructor(
@@ -29,24 +29,68 @@ class CharacterListViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    private val _statusFilter = MutableStateFlow("")
+    val statusFilter = _statusFilter.asStateFlow()
+
+    private val _genderFilter = MutableStateFlow("")
+    val genderFilter = _genderFilter.asStateFlow()
+
+    private val _speciesFilter = MutableStateFlow("")
+    val speciesFilter = _speciesFilter.asStateFlow()
+
+    private val _typeFilter = MutableStateFlow("")
+    val typeFilter = _typeFilter.asStateFlow()
+
     private var currentPage = 1
 
     init {
         loadCharacters(reset = true)
     }
 
+    fun onStatusFilterChanged(status: String) {
+        _statusFilter.value = status
+    }
+
+    fun onGenderFilterChanged(gender: String) {
+        _genderFilter.value = gender
+    }
+
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
     }
 
-    fun triggerSearch() {
-        loadCharacters(reset = true, query = _searchQuery.value)
+    fun onSpeciesFilterChanged(species: String) {
+        _speciesFilter.value = species
+    }
+
+    fun onTypeFilterChanged(type: String) {
+        _typeFilter.value = type
+    }
+
+    fun searchCharacters() {
+        _uiState.update { it.copy(searchCounter = it.searchCounter + 1) }
+        loadCharacters(reset = true)
+    }
+
+    fun resetAllFilters() {
+        _statusFilter.value = ""
+        _genderFilter.value = ""
+        _speciesFilter.value = ""
+        _typeFilter.value = ""
+        _searchQuery.value = ""
+
+        loadCharacters(reset = true)
     }
 
     fun loadCharacters(
-        reset: Boolean = false,
-        query: String = _searchQuery.value,
+        reset: Boolean = false
     ) {
+        val query = _searchQuery.value
+        val status = _statusFilter.value
+        val gender = _genderFilter.value
+        val species = _speciesFilter.value
+        val type = _typeFilter.value
+
         if (uiState.value.isLoading) return
 
         viewModelScope.launch {
@@ -55,7 +99,14 @@ class CharacterListViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = true) }
             }
 
-            getCharactersUseCase(page = currentPage, name = query.ifEmpty { null })
+            getCharactersUseCase(
+                page = currentPage,
+                name = query.ifEmpty { null },
+                status = status.ifEmpty { null },
+                gender = gender.ifEmpty { null },
+                type = type.ifEmpty { null },
+                species = species.ifEmpty { null }
+            )
                 .onSuccess { paginatedData ->
                     val characters = paginatedData.data
                     _uiState.update {

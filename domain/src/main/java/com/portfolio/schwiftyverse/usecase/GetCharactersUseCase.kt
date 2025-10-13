@@ -7,7 +7,13 @@ import com.portfolio.schwiftyverse.repository.CharacterRepository
 class GetCharactersUseCase(
     private val repository: CharacterRepository
 ) {
-    suspend operator fun invoke(page: Int, name: String?) =
-        repository.getCharacters(page = page, name = name)
+    suspend operator fun invoke(
+        page: Int,
+        name: String?,
+        status: String?,
+        species: String?,
+        type: String?,
+        gender: String?
+    ) = repository.getCharacters(page, name, status, species, type, gender)
 
 }

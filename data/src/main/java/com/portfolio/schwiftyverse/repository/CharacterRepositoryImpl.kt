@@ -18,10 +18,14 @@ class CharacterRepositoryImpl @Inject constructor(
 
     override suspend fun getCharacters(
         page: Int,
-        name: String?
+        name: String?,
+        status: String?,
+        species: String?,
+        type: String?,
+        gender: String?
     ): Result<PaginatedData<CharacterModel>> {
         return try {
-            val response = apiService.getCharacters(page = page, name = name)
+            val response = apiService.getCharacters(page, name, status, species, type, gender)
             val characters = response.results.map {
                 it.toDomainModel(defaultUnknown, defaultImage)
             }

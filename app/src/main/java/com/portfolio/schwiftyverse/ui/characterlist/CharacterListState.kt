@@ -10,5 +10,10 @@ data class CharacterListState(
     val characters: List<CharacterModel> = emptyList(),
     val info: InfoModel? = null,
     val canPaginate: Boolean = false,
+    val statusFilter: String = "",
+    val speciesFilter: String = "",
+    val typeFilter: String = "",
+    val genderFilter: String = "",
+    val searchCounter: Int = 0,
     @StringRes val error: Int? = null
 )
