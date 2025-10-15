@@ -3,48 +3,122 @@ package com.portfolio.schwiftyverse.ui.characterlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.portfolio.schwiftyverse.R
-import com.portfolio.schwiftyverse.usecase.GetCharactersUseCase
+import com.portfolio.schwiftyverse.model.CharacterModel
+import com.portfolio.schwiftyverse.repository.CharacterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
-
-@OptIn(FlowPreview::class)
 @HiltViewModel
 class CharacterListViewModel @Inject constructor(
-    private val getCharactersUseCase: GetCharactersUseCase
+    private val characterRepository: CharacterRepository
 ) : ViewModel() {
 
-    // Private mutable state flow that only the ViewModel can modify.
-    private val _uiState = MutableStateFlow(CharacterListState())
-
-    // Public immutable state flow that the UI can observe.
-    val uiState: StateFlow<CharacterListState> = _uiState.asStateFlow()
-
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
-
     private val _statusFilter = MutableStateFlow("")
-    val statusFilter = _statusFilter.asStateFlow()
-
     private val _genderFilter = MutableStateFlow("")
-    val genderFilter = _genderFilter.asStateFlow()
-
     private val _speciesFilter = MutableStateFlow("")
-    val speciesFilter = _speciesFilter.asStateFlow()
-
     private val _typeFilter = MutableStateFlow("")
-    val typeFilter = _typeFilter.asStateFlow()
 
-    private var currentPage = 1
+    private val _timeoutError = MutableStateFlow<Int?>(null)
+
+    val uiState: StateFlow<CharacterListState> = combine(
+        characterRepository.getCharactersStream(),
+        _searchQuery,
+        _statusFilter,
+        _genderFilter,
+        _speciesFilter,
+        _typeFilter,
+        _timeoutError
+    ) { results ->
+
+        val timeoutError = results[6] as Int?
+        if (timeoutError != null) {
+            return@combine CharacterListState(isLoading = false, error = timeoutError)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val charactersFromDb = results[0] as List<CharacterModel>
+        val query = results[1] as String
+        val status = results[2] as String
+        val gender = results[3] as String
+        val species = results[4] as String
+        val type = results[5] as String
+
+        val filteredList = charactersFromDb.filter { character ->
+            (query.isEmpty() || character.name.contains(query, ignoreCase = true)) &&
+                    (status.isEmpty() || character.status.equals(status, ignoreCase = true)) &&
+                    (gender.isEmpty() || character.gender.equals(gender, ignoreCase = true)) &&
+                    (species.isEmpty() || character.species.contains(species, ignoreCase = true)) &&
+                    (type.isEmpty() || character.type.contains(type, ignoreCase = true))
+        }
+
+        val isAnyFilterActive =
+            query.isNotEmpty() || status.isNotEmpty() || gender.isNotEmpty() || species.isNotEmpty() || type.isNotEmpty()
+
+        CharacterListState(
+            isLoading = charactersFromDb.isEmpty() && !isAnyFilterActive,
+            characters = filteredList,
+            noResultsFound = filteredList.isEmpty() && isAnyFilterActive,
+            searchQuery = query,
+            statusFilter = status,
+            genderFilter = gender,
+            speciesFilter = species,
+            typeFilter = type
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CharacterListState(isLoading = true)
+    )
 
     init {
-        loadCharacters(reset = true)
+        viewModelScope.launch {
+            characterRepository.triggerSync()
+        }
+        viewModelScope.launch {
+            try {
+                withTimeout(5_000L) {
+                    characterRepository.getCharactersStream().first { it.isNotEmpty() }
+                }
+            } catch (e: TimeoutCancellationException) {
+                if (uiState.value.characters.isEmpty()) {
+                    _timeoutError.value = R.string.error_timeout_schwifty
+                }
+            }
+        }
+    }
+
+    fun retryLoad() {
+        _timeoutError.value = null
+
+        viewModelScope.launch {
+            characterRepository.triggerSync()
+        }
+
+        viewModelScope.launch {
+            try {
+                withTimeout(5_000L) {
+                    characterRepository.getCharactersStream().first { it.isNotEmpty() }
+                }
+            } catch (e: TimeoutCancellationException) {
+                if (uiState.value.characters.isEmpty()) {
+                    _timeoutError.value = R.string.error_timeout_schwifty
+                }
+            }
+        }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
     }
 
     fun onStatusFilterChanged(status: String) {
@@ -55,10 +129,6 @@ class CharacterListViewModel @Inject constructor(
         _genderFilter.value = gender
     }
 
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-    }
-
     fun onSpeciesFilterChanged(species: String) {
         _speciesFilter.value = species
     }
@@ -67,67 +137,11 @@ class CharacterListViewModel @Inject constructor(
         _typeFilter.value = type
     }
 
-    fun searchCharacters() {
-        _uiState.update { it.copy(searchCounter = it.searchCounter + 1) }
-        loadCharacters(reset = true)
-    }
-
     fun resetAllFilters() {
+        _searchQuery.value = ""
         _statusFilter.value = ""
         _genderFilter.value = ""
         _speciesFilter.value = ""
         _typeFilter.value = ""
-        _searchQuery.value = ""
-
-        loadCharacters(reset = true)
-    }
-
-    fun loadCharacters(
-        reset: Boolean = false
-    ) {
-        val query = _searchQuery.value
-        val status = _statusFilter.value
-        val gender = _genderFilter.value
-        val species = _speciesFilter.value
-        val type = _typeFilter.value
-
-        if (uiState.value.isLoading) return
-
-        viewModelScope.launch {
-            if (reset) {
-                currentPage = 1
-                _uiState.update { it.copy(isLoading = true) }
-            }
-
-            getCharactersUseCase(
-                page = currentPage,
-                name = query.ifEmpty { null },
-                status = status.ifEmpty { null },
-                gender = gender.ifEmpty { null },
-                type = type.ifEmpty { null },
-                species = species.ifEmpty { null }
-            )
-                .onSuccess { paginatedData ->
-                    val characters = paginatedData.data
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            characters = if (reset) characters else it.characters + characters,
-                            canPaginate = paginatedData.info.hasNext,
-                            error = null
-                        )
-                    }
-                    if (paginatedData.info.hasNext) currentPage++
-                }
-                .onFailure {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = R.string.error_search_failed,
-                            characters = emptyList()
-                        )
-                    }
-                }
-        }
     }
 }

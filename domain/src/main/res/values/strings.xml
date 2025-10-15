@@ -17,6 +17,9 @@
     <string name="filter_option_unknown">Unknown</string>
     <string name="filter_option_female">Female</string>
     <string name="filter_option_male">Male</string>
+    <string name="filter_reset">  • Reset</string>
     <string name="filter_option_genderless">Genderless</string>
-    <string name="filter_applied">"  (Filtros aplicados)"</string>
+    <string name="filter_applied">"  (Applied filters)"</string>
+    <string name="error_timeout_schwifty">Looks like we got lost in a portal! Check your internet connection, genius.</string>
+    <string name="text_try_again">Try again now!</string>
 </resources>

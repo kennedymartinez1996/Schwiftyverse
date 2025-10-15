@@ -12,7 +12,8 @@ data class CharacterDto(
     @field:Json(name = "image") val image: String?,
     @field:Json(name = "gender") val gender: String?,
     @field:Json(name = "origin") val origin: OriginDto?,
-    @field:Json(name = "location") val location: LocationDto?
+    @field:Json(name = "location") val location: LocationDto?,
+    @field:Json(name = "type") val type: String?
 )
 
 @JsonClass(generateAdapter = true)

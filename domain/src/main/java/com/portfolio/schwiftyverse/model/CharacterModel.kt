@@ -10,5 +10,6 @@ data class CharacterModel(
     val imageUrl: String,
     val gender: String,
     val origin: String,
-    val lastKnownLocation: String
+    val lastKnownLocation: String,
+    val type: String
 )

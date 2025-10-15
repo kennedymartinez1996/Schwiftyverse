@@ -1,6 +1,8 @@
 package com.portfolio.schwiftyverse.ui.characterlist
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,7 +45,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -67,70 +69,57 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.portfolio.schwiftyverse.R
 import com.portfolio.schwiftyverse.model.CharacterModel
-import com.portfolio.schwiftyverse.ui.theme.CardBackgroundGrayTransparent
 import com.portfolio.schwiftyverse.ui.theme.PortalGreen
 
-/**
- * The main screen composable that observes the ViewModel's state and delegates
- * the UI rendering to the appropriate composable.
- */
 @Composable
 fun CharacterListScreen(
-    viewModel: CharacterListViewModel = hiltViewModel(), onCharacterClick: (Int) -> Unit
+    onCharacterClick: (Int) -> Unit,
+    viewModel: CharacterListViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
-    val genderFilter by viewModel.genderFilter.collectAsStateWithLifecycle()
-    val speciesFilter by viewModel.speciesFilter.collectAsStateWithLifecycle()
-    val typeFilter by viewModel.typeFilter.collectAsStateWithLifecycle()
+
     var advancedFiltersVisible by remember { mutableStateOf(false) }
-    var isFilterApplied by remember { mutableStateOf(false) }
     var isSearchCharactersFocused by remember { mutableStateOf(false) }
     var isSpeciesFocused by remember { mutableStateOf(false) }
     var isTypeFocused by remember { mutableStateOf(false) }
 
+    val gridState = rememberLazyGridState()
+
     val statusOptions = listOf(
-        stringResource(R.string.filter_option_all) to stringResource(R.string.filter_api_empty),
-        stringResource(R.string.filter_option_alive) to stringResource(R.string.filter_api_alive),
-        stringResource(R.string.filter_option_dead) to stringResource(R.string.filter_api_dead),
-        stringResource(R.string.filter_option_unknown) to stringResource(R.string.filter_api_unknown)
+        stringResource(R.string.filter_option_all) to "",
+        stringResource(R.string.filter_option_alive) to "Alive",
+        stringResource(R.string.filter_option_dead) to "Dead",
+        stringResource(R.string.filter_option_unknown) to "unknown"
     )
 
     val genderOptions = listOf(
-        stringResource(R.string.filter_option_all) to stringResource(R.string.filter_api_empty),
-        stringResource(R.string.filter_option_female) to stringResource(R.string.filter_api_female),
-        stringResource(R.string.filter_option_male) to stringResource(R.string.filter_api_male),
-        stringResource(R.string.filter_option_genderless) to stringResource(R.string.filter_api_genderless)
+        stringResource(R.string.filter_option_all) to "",
+        stringResource(R.string.filter_option_female) to "Female",
+        stringResource(R.string.filter_option_male) to "Male",
+        stringResource(R.string.filter_option_genderless) to "Genderless"
     )
 
-    val executeSearchAndCollapse: () -> Unit = remember {
-        {
-            viewModel.searchCharacters()
-            advancedFiltersVisible = false
-            isFilterApplied = true
-        }
-    }
+    var previousIndex by remember(gridState) { mutableIntStateOf(gridState.firstVisibleItemIndex) }
+    var previousScrollOffset by remember(gridState) { mutableIntStateOf(gridState.firstVisibleItemScrollOffset) }
 
-    val clearFiltersAndCollapse: () -> Unit = remember {
-        {
-            viewModel.resetAllFilters()
-            advancedFiltersVisible = false
-            isFilterApplied = false
-        }
-    }
+    val isHeaderVisible by remember(gridState) {
+        derivedStateOf {
+            val isScrollingUp = if (previousIndex != gridState.firstVisibleItemIndex) {
+                previousIndex > gridState.firstVisibleItemIndex
+            } else {
+                previousScrollOffset >= gridState.firstVisibleItemScrollOffset
+            }
 
-    val gridState = rememberLazyGridState()
+            previousIndex = gridState.firstVisibleItemIndex
+            previousScrollOffset = gridState.firstVisibleItemScrollOffset
 
-    LaunchedEffect(state.searchCounter) {
-        if (state.searchCounter > 0) {
-            gridState.scrollToItem(0)
+            gridState.firstVisibleItemIndex == 0 || isScrollingUp
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
-        AnimatedVisibility(visible = gridState.isScrollingUp()) {
+        AnimatedVisibility(visible = isHeaderVisible) {
             Column {
                 Box(
                     modifier = Modifier
@@ -140,32 +129,26 @@ fun CharacterListScreen(
                     Image(
                         painter = painterResource(id = R.drawable.top_banner),
                         contentDescription = "Schwiftyverse Banner",
-                        modifier = Modifier.matchParentSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.FillWidth
                     )
                     Box(
                         modifier = Modifier
-                            .matchParentSize()
+                            .fillMaxSize()
                             .background(Color.Black.copy(alpha = 0.3f))
                     )
                 }
+
                 OutlinedTextField(
-                    value = searchQuery,
+                    value = state.searchQuery,
                     onValueChange = { viewModel.onSearchQueryChanged(it) },
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Search
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { viewModel.searchCharacters() }),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { }),
                     singleLine = true,
                     label = {
                         Text(
                             text = stringResource(R.string.text_search_characters),
-                            color = if (isSearchCharactersFocused || searchQuery.isNotEmpty()) {
-                                PortalGreen
-                            } else {
-                                Color.Black
-                            }
+                            color = if (isSearchCharactersFocused || state.searchQuery.isNotEmpty()) PortalGreen else Color.Black
                         )
                     },
                     modifier = Modifier
@@ -181,6 +164,7 @@ fun CharacterListScreen(
                         cursorColor = PortalGreen
                     )
                 )
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -192,32 +176,30 @@ fun CharacterListScreen(
                             .clickable { advancedFiltersVisible = !advancedFiltersVisible }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = stringResource(R.string.text_advanced_filters),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = PortalGreen
                             )
-
-                            if (isFilterApplied) {
+                            if (state.isAnyFilterActive()) {
                                 Text(
                                     text = stringResource(R.string.filter_applied),
                                     color = PortalGreen.copy(alpha = 0.7f),
                                     fontWeight = FontWeight.Medium,
                                     modifier = Modifier.padding(start = 4.dp)
                                 )
-
                                 Text(
-                                    text = stringResource(R.string.filtros_filter_clear),
+                                    text = stringResource(R.string.filter_reset),
                                     color = Color.Red.copy(alpha = 0.8f),
                                     fontWeight = FontWeight.Medium,
                                     modifier = Modifier
                                         .padding(start = 4.dp)
-                                        .clickable { clearFiltersAndCollapse() })
+                                        .clickable { viewModel.resetAllFilters() }
+                                )
                             }
                         }
                         Icon(
@@ -228,86 +210,104 @@ fun CharacterListScreen(
                     }
 
                     AnimatedVisibility(visible = advancedFiltersVisible) {
-                        Column {
-                            AdvancedFilters(
-                                statusOptions = statusOptions,
-                                statusFilter = statusFilter,
-                                onStatusFilterChanged = viewModel::onStatusFilterChanged,
-                                genderOptions = genderOptions,
-                                genderFilter = genderFilter,
-                                onGenderFilterChanged = viewModel::onGenderFilterChanged,
-                                speciesFilter = speciesFilter,
-                                onSpeciesFilterChanged = viewModel::onSpeciesFilterChanged,
-                                typeFilter = typeFilter,
-                                onTypeFilterChanged = viewModel::onTypeFilterChanged,
-                                isSpeciesFocused = isSpeciesFocused,
-                                onSpeciesFocusChanged = { isSpeciesFocused = it },
-                                isTypeFocused = isTypeFocused,
-                                onTypeFocusChanged = { isTypeFocused = it })
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = { executeSearchAndCollapse() },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = PortalGreen)
-                            ) {
-                                Text(stringResource(R.string.button_search))
-                            }
-                        }
+                        AdvancedFilters(
+                            statusOptions = statusOptions,
+                            statusFilter = state.statusFilter,
+                            onStatusFilterChanged = viewModel::onStatusFilterChanged,
+                            genderOptions = genderOptions,
+                            genderFilter = state.genderFilter,
+                            onGenderFilterChanged = viewModel::onGenderFilterChanged,
+                            speciesFilter = state.speciesFilter,
+                            onSpeciesFilterChanged = viewModel::onSpeciesFilterChanged,
+                            typeFilter = state.typeFilter,
+                            onTypeFilterChanged = viewModel::onTypeFilterChanged,
+                            isSpeciesFocused = isSpeciesFocused,
+                            onSpeciesFocusChanged = { isSpeciesFocused = it },
+                            isTypeFocused = isTypeFocused,
+                            onTypeFocusChanged = { isTypeFocused = it }
+                        )
                     }
                 }
             }
         }
 
         Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxSize(), contentAlignment = Alignment.Center
+            modifier = Modifier.weight(1f)
         ) {
-            CharacterList(
-                gridState = gridState,
-                characters = state.characters,
-                canPaginate = state.canPaginate,
-                onCharacterClick = onCharacterClick,
-                onLoadMoreCharacter = {
-                    viewModel.loadCharacters()
-                })
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator()
-                }
-
-                state.error != null -> {
-                    Text(
-                        text = stringResource(R.string.error_search_failed),
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    state.isLoading -> CircularProgressIndicator()
+                    state.noResultsFound -> Text(
+                        stringResource(R.string.error_search_failed),
+                        color = Color.White
                     )
+
+                    state.error != null -> {
+                        val errorId = state.error
+                        if (errorId != null) {
+                            ErrorStateWithMessage(
+                                errorId = errorId,
+                                onRetry = { viewModel.retryLoad() })
+                        }
+                    }
+
+                    else -> {
+                        CharacterList(
+                            gridState = gridState,
+                            characters = state.characters,
+                            onCharacterClick = onCharacterClick
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-
 @Composable
-private fun LazyGridState.isScrollingUp(): Boolean {
-    var previousIndex by remember(this) { mutableIntStateOf(firstVisibleItemIndex) }
-    var previousScrollOffset by remember(this) { mutableIntStateOf(firstVisibleItemScrollOffset) }
-    return remember(this) {
-        derivedStateOf {
-            if (previousIndex != firstVisibleItemIndex) {
-                previousIndex > firstVisibleItemIndex
-            } else {
-                previousScrollOffset >= firstVisibleItemScrollOffset
-            }.also {
-                previousIndex = firstVisibleItemIndex
-                previousScrollOffset = firstVisibleItemScrollOffset
-            }
+private fun ErrorStateWithMessage(
+    @StringRes errorId: Int,
+    onRetry: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(16.dp)
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.internet_error),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(id = errorId),
+            color = Color.Red,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = PortalGreen,
+                contentColor = Color.Black
+            ),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Text(
+                text = stringResource(R.string.text_try_again),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium
+            )
         }
-    }.value
+    }
 }
 
 @Composable
@@ -354,7 +354,8 @@ private fun AdvancedFilters(
             )
         }
         Row(
-            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
                 value = speciesFilter,
@@ -400,7 +401,7 @@ private fun AdvancedFilters(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterDropdown(
     label: String,
@@ -410,9 +411,10 @@ fun FilterDropdown(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-
     ExposedDropdownMenuBox(
-        expanded = isExpanded, onExpandedChange = { isExpanded = it }, modifier = modifier
+        expanded = isExpanded,
+        onExpandedChange = { isExpanded = it },
+        modifier = modifier
     ) {
         OutlinedTextField(
             value = options.find { it.second == selectedValue }?.first ?: label,
@@ -427,35 +429,33 @@ fun FilterDropdown(
                 unfocusedLabelColor = PortalGreen
             )
         )
-
         ExposedDropdownMenu(
-            expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
+            expanded = isExpanded,
+            onDismissRequest = { isExpanded = false }
+        ) {
             options.forEach { (displayName, apiValue) ->
-                DropdownMenuItem(text = { Text(displayName) }, onClick = {
-                    onValueChange(apiValue)
-                    isExpanded = false
-                })
+                DropdownMenuItem(
+                    text = { Text(displayName) },
+                    onClick = {
+                        onValueChange(apiValue)
+                        isExpanded = false
+                    }
+                )
             }
         }
     }
 }
-
-/**
- * Displays the list of characters using a LazyColumn.
- */
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CharacterList(
     gridState: LazyGridState,
     characters: List<CharacterModel>,
-    canPaginate: Boolean,
     onCharacterClick: (Int) -> Unit,
-    onLoadMoreCharacter: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3), // Defines 2 columns
+        columns = GridCells.Fixed(3),
         state = gridState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -464,67 +464,58 @@ private fun CharacterList(
     ) {
         items(items = characters, key = { character -> character.id }) { character ->
             CharacterListItem(
-                character = character, onClick = { onCharacterClick(character.id) })
-
-        }
-    }
-    val endOfListReached by remember {
-        derivedStateOf {
-            gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index == gridState.layoutInfo.totalItemsCount - 1
-        }
-    }
-    LaunchedEffect(endOfListReached) {
-        if (endOfListReached && canPaginate) {
-            onLoadMoreCharacter()
+                character = character,
+                onClick = { onCharacterClick(character.id) },
+                modifier = Modifier.animateItemPlacement()
+            )
         }
     }
 }
 
-/**
- * Displays a single character item in the list.
- */
-
 @Composable
 private fun CharacterListItem(
-    character: CharacterModel, onClick: () -> Unit, modifier: Modifier = Modifier
+    character: CharacterModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CardBackgroundGrayTransparent
-        )
-
+            containerColor = Color.DarkGray.copy(alpha = 0.3f)
+        ),
+        border = BorderStroke(1.dp, PortalGreen)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .padding(12.dp)
+                .padding(8.dp)
                 .fillMaxSize()
         ) {
             AsyncImage(
                 model = character.imageUrl,
                 contentDescription = character.name,
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(80.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = character.name,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = Color.White
             )
             Text(
                 text = character.species,
                 style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color.LightGray
             )
         }
     }
 }
-

@@ -1,54 +1,61 @@
 package com.portfolio.schwiftyverse.repository
 
+import android.content.Context
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.portfolio.schwiftyverse.di.DefaultImage
 import com.portfolio.schwiftyverse.di.DefaultUnknown
+import com.portfolio.schwiftyverse.local.CharacterDao
+import com.portfolio.schwiftyverse.local.toDomainModel
+import com.portfolio.schwiftyverse.local.toEntity
 import com.portfolio.schwiftyverse.model.CharacterModel
-import com.portfolio.schwiftyverse.model.InfoModel
-import com.portfolio.schwiftyverse.model.PaginatedData
 import com.portfolio.schwiftyverse.remote.ApiService
 import com.portfolio.schwiftyverse.remote.toDomainModel
+import com.portfolio.schwiftyverse.worker.SyncWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-// This class is clean of Android Context, injecting the required strings directly via Hilt.
 class CharacterRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
+    private val characterDao: CharacterDao,
+    @ApplicationContext private val context: Context,
     @DefaultUnknown private val defaultUnknown: String,
     @DefaultImage private val defaultImage: String
 ) : CharacterRepository {
 
-    override suspend fun getCharacters(
-        page: Int,
-        name: String?,
-        status: String?,
-        species: String?,
-        type: String?,
-        gender: String?
-    ): Result<PaginatedData<CharacterModel>> {
-        return try {
-            val response = apiService.getCharacters(page, name, status, species, type, gender)
-            val characters = response.results.map {
-                it.toDomainModel(defaultUnknown, defaultImage)
-            }
-            val info = InfoModel(
-                count = response.info.count ?: 0,
-                pages = response.info.pages ?: 0,
-                hasNext = response.info.next != null,
-                hasPrev = response.info.prev != null
-            )
-            val paginatedData = PaginatedData(
-                info = info,
-                data = characters
-            )
-            Result.success(paginatedData)
-        } catch (e: Exception) {
-            Result.failure(e)
+    override fun getCharactersStream(): Flow<List<CharacterModel>> {
+        return characterDao.getCharactersStream().map { entities ->
+            entities.map { it.toDomainModel(defaultUnknown, defaultImage) }
         }
     }
 
+    override fun triggerSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
     override suspend fun getCharacterById(id: Int): Result<CharacterModel> {
+        val localCharacter = characterDao.getCharacterById(id)
+
+        if (localCharacter != null) {
+            return Result.success(localCharacter.toDomainModel(defaultUnknown, defaultImage))
+        }
+
         return try {
-            val response = apiService.getCharacterById(id = id)
-            val character = response.toDomainModel(defaultUnknown, defaultImage)
+            val dto = apiService.getCharacterById(id)
+            val character = dto.toDomainModel(defaultUnknown, defaultImage)
+            characterDao.upsertAll(listOf(character.toEntity()))
             Result.success(character)
         } catch (e: Exception) {
             Result.failure(e)
