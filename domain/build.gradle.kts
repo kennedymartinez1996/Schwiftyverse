@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.portfolio.schwiftyverse"
+    namespace = "com.portfolio.schwiftyverse.domain"
     compileSdk = 36
 
     defaultConfig {

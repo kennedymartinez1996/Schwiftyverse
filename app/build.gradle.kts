@@ -17,7 +17,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.portfolio.schwiftyverse.HiltTestRunner"
     }
 
     buildTypes {
@@ -36,6 +36,14 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    packaging {
+        resources {
+            excludes.add("META-INF/AL2.0")
+            excludes.add("META-INF/LGPL2.1")
+            excludes.add("META-INF/LICENSE.md")
+            excludes.add("META-INF/LICENSE-notice.md")
+        }
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -70,6 +78,9 @@ dependencies {
     // Use ksp for the Hilt compiler.
     ksp(libs.hilt.compiler)
 
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
+
     //Hilt integration for Compose Navigation
     implementation(libs.androidx.hilt.navigation.compose)
 
@@ -90,6 +101,13 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     ksp(libs.androidx.hilt.compiler)
+
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
+    testImplementation(libs.coroutines.test)
+
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.byte.buddy.android)
 
     // Modules
     implementation(project(":domain"))

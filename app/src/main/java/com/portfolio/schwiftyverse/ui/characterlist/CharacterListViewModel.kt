@@ -84,10 +84,14 @@ class CharacterListViewModel @Inject constructor(
         viewModelScope.launch {
             characterRepository.triggerSync()
         }
+        startTimeoutWatcher()
+    }
+
+    fun startTimeoutWatcher() {
         viewModelScope.launch {
             try {
-                withTimeout(5_000L) {
-                    characterRepository.getCharactersStream().first { it.isNotEmpty() }
+                withTimeout(40_000L) {
+                    uiState.first { !it.isLoading }
                 }
             } catch (e: TimeoutCancellationException) {
                 if (uiState.value.characters.isEmpty()) {

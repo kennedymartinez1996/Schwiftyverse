@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.portfolio.schwiftyverse"
+    namespace = "com.portfolio.schwiftyverse.data"
     compileSdk = 36
 
     defaultConfig {
@@ -50,6 +50,8 @@ dependencies {
     //Hilt integration for Compose Navigation
     implementation(libs.androidx.hilt.navigation.compose)
 
+    implementation(libs.coil.compose)
+
     // NETWORKING (RETROFIT & MOSHI)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
@@ -64,6 +66,9 @@ dependencies {
 
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.coroutines.test)
 
 
     // MODULE

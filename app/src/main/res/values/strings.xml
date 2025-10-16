@@ -24,4 +24,13 @@
     <string name="filter_label_type">Type</string>
     <string name="button_search">Search</string>
     <string name="text_advanced_filters">Advanced Filters</string>
+    <string name="error_list_unknown">An unknown error geting a list of characters</string>
+    <string name="content_description_back">Back</string>
+    <string name="error_search_failed">No results found.</string>
+    <string name="text_search_characters">Search characters...</string>
+    <string name="filter_option_empty">""</string>
+    <string name="filter_applied">"  (Applied filters)"</string>
+    <string name="error_timeout_schwifty">Looks like we got lost in a portal! Check your internet connection, genius.</string>
+    <string name="text_try_again">Try again now!</string>
+    <string name="filter_reset">  • Reset</string>
 </resources>

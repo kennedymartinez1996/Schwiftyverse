@@ -12,8 +12,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
-    // Binds the CharacterRepository interface to its implementation.
-    // @Binds is more efficient than @Provides for this simple case.
     @Binds
     @Singleton
     abstract fun bindCharacterRepository(

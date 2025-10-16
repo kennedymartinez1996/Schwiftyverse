@@ -5,6 +5,8 @@ import androidx.hilt.work.HiltWorker
 import androidx.room.withTransaction
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import coil.ImageLoader
+import coil.request.ImageRequest
 import com.portfolio.schwiftyverse.di.DefaultImage
 import com.portfolio.schwiftyverse.di.DefaultUnknown
 import com.portfolio.schwiftyverse.local.AppDatabase
@@ -24,6 +26,7 @@ class SyncWorker @AssistedInject constructor(
     private val apiService: ApiService,
     private val characterDao: CharacterDao,
     private val appDatabase: AppDatabase,
+    private val imageLoader: ImageLoader,
     @DefaultUnknown private val defaultUnknown: String,
     @DefaultImage private val defaultImage: String
 ) : CoroutineWorker(context, workerParams) {
@@ -57,6 +60,15 @@ class SyncWorker @AssistedInject constructor(
                     characterDao.deleteCharacters(charactersToDelete)
                 }
                 characterDao.upsertAll(remoteCharacters.map { it.toEntity() })
+            }
+
+            remoteCharacters.forEach { character ->
+                if (character.imageUrl.isNotEmpty()) {
+                    val request = ImageRequest.Builder(applicationContext)
+                        .data(character.imageUrl)
+                        .build()
+                    imageLoader.enqueue(request)
+                }
             }
 
             return Result.success()

@@ -48,25 +48,22 @@ import coil.compose.AsyncImage
 import com.portfolio.schwiftyverse.R
 import com.portfolio.schwiftyverse.ui.theme.PortalGreen
 
-@OptIn(ExperimentalMaterial3Api::class) // Required for TopAppBar
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterDetailScreen(
     viewModel: CharacterDetailViewModel = hiltViewModel(),
-    // The screen now needs the NavController to handle the back action.
     navController: NavController
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Scaffold provides a standard layout structure (top bar, content, etc.).
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = stringResource(id = R.string.content_description_back), color = Color.White) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent // Make the app bar transparent
+                    containerColor = Color.Transparent
                 ),
                 navigationIcon = {
-                    // This is the back button.
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -77,13 +74,12 @@ fun CharacterDetailScreen(
                 }
             )
         },
-        containerColor = Color.Transparent // Make the scaffold background transparent
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        // The rest of your UI goes inside this Box, with the provided padding.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues), // Apply padding from the scaffold
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
             if (state.isLoading) {
@@ -92,7 +88,6 @@ fun CharacterDetailScreen(
                 Text(text = state.error!!, color = Color.White)
             } else if (state.character != null) {
                 val character = state.character!!
-                // Main content column, with vertical scrolling
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -100,7 +95,6 @@ fun CharacterDetailScreen(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Character Image
                     AsyncImage(
                         model = character.imageUrl,
                         contentDescription = character.name,
@@ -112,7 +106,6 @@ fun CharacterDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Character Name
                     Text(
                         text = character.name,
                         fontSize = 32.sp,
@@ -120,7 +113,6 @@ fun CharacterDetailScreen(
                         color = PortalGreen
                     )
 
-                    // Status with Icon
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Favorite,
@@ -138,7 +130,6 @@ fun CharacterDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Detail Sections
                     DetailSection(
                         title = "ORIGIN",
                         icon = Icons.Default.Public,
@@ -164,9 +155,6 @@ fun CharacterDetailScreen(
         }
     }
 }
-
-
-// Reusable composable for the detail sections
 @Composable
 private fun DetailSection(title: String, icon: ImageVector, value: String) {
     Column(

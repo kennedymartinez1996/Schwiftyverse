@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -70,6 +71,7 @@ import coil.compose.AsyncImage
 import com.portfolio.schwiftyverse.R
 import com.portfolio.schwiftyverse.model.CharacterModel
 import com.portfolio.schwiftyverse.ui.theme.PortalGreen
+import com.portfolio.schwiftyverse.ui.theme.SchwiftyverseTheme
 
 @Composable
 fun CharacterListScreen(
@@ -490,18 +492,18 @@ private fun CharacterListItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .padding(8.dp)
+                .padding(12.dp)
                 .fillMaxSize()
         ) {
             AsyncImage(
                 model = character.imageUrl,
                 contentDescription = character.name,
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(100.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = character.name,
                 style = MaterialTheme.typography.titleSmall,
@@ -515,6 +517,88 @@ private fun CharacterListItem(
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = Color.LightGray
+            )
+        }
+    }
+}
+
+@Preview(name = "Screen - Loading State", showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CharacterListScreenLoadingPreview() {
+    SchwiftyverseTheme {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+@Preview(name = "Screen - Success State", showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CharacterListScreenSuccessPreview() {
+    val fakeCharacters = listOf(
+        CharacterModel(
+            1,
+            "Rick Sanchez",
+            "Alive",
+            "Human",
+            "",
+            "Male",
+            "Earth C-137",
+            "Citadel of Ricks",
+            "Human"
+        ),
+        CharacterModel(
+            2,
+            "Morty Smith",
+            "Alive",
+            "Human",
+            "",
+            "Male",
+            "Earth C-137",
+            "Citadel of Ricks",
+            "Human"
+        ),
+        CharacterModel(
+            3,
+            "Summer Smith",
+            "Alive",
+            "Human",
+            "",
+            "Female",
+            "Earth C-137",
+            "Citadel of Ricks",
+            "Human"
+        )
+    )
+
+    SchwiftyverseTheme {
+        CharacterList(
+            gridState = rememberLazyGridState(),
+            characters = fakeCharacters,
+            onCharacterClick = {}
+        )
+    }
+}
+
+@Preview(name = "Screen - Error State", showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CharacterListScreenErrorPreview() {
+    SchwiftyverseTheme {
+        ErrorStateWithMessage(
+            errorId = R.string.error_timeout_schwifty,
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(name = "Screen - No Results State", showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CharacterListScreenNoResultsPreview() {
+    SchwiftyverseTheme {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.error_search_failed),
+                color = Color.White
             )
         }
     }
