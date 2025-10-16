@@ -8,6 +8,3 @@ annotation class BaseUrl
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultUnknown
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class DefaultImage

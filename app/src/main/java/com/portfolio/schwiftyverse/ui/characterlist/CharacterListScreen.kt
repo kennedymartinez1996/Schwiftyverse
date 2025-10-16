@@ -30,6 +30,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,6 +44,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -70,6 +75,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.portfolio.schwiftyverse.R
 import com.portfolio.schwiftyverse.model.CharacterModel
+import com.portfolio.schwiftyverse.model.SyncState
 import com.portfolio.schwiftyverse.ui.theme.PortalGreen
 import com.portfolio.schwiftyverse.ui.theme.SchwiftyverseTheme
 
@@ -140,6 +146,10 @@ fun CharacterListScreen(
                             .background(Color.Black.copy(alpha = 0.3f))
                     )
                 }
+                SyncStatusBanner(
+                    syncState = state.syncState,
+                    onForceSync = { viewModel.retryLoad() }
+                )
 
                 OutlinedTextField(
                     value = state.searchQuery,
@@ -265,6 +275,83 @@ fun CharacterListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SyncStatusBanner(
+    syncState: SyncState,
+    onForceSync: () -> Unit
+) {
+    val (icon, color, message) = when (syncState) {
+        is SyncState.NotStarted -> Triple(
+            Icons.Default.CloudOff,
+            Color.Gray,
+            stringResource(R.string.text_sync_state_started)
+
+        )
+
+        is SyncState.Syncing -> Triple(
+            Icons.Default.Sync,
+            Color.White,
+            stringResource(
+                id = R.string.text_sync_state_syncing,
+                syncState.progress
+            )
+        )
+
+        is SyncState.Success -> Triple(
+            Icons.Default.CloudDone,
+            PortalGreen,
+            stringResource(R.string.text_sync_state_success, syncState.formattedTime())
+        )
+
+        is SyncState.Failed -> Triple(
+            Icons.Default.CloudOff,
+            Color.Red,
+            stringResource(R.string.text_sync_state_failed)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier.align(Alignment.Center),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (syncState is SyncState.Syncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = color
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = "Sync Status",
+                    tint = color,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Text(text = message, color = color, style = MaterialTheme.typography.bodySmall)
+        }
+
+        IconButton(
+            onClick = onForceSync,
+            enabled = syncState !is SyncState.Syncing,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Force Sync",
+                tint = if (syncState is SyncState.Syncing) Color.Gray else Color.White
+            )
         }
     }
 }

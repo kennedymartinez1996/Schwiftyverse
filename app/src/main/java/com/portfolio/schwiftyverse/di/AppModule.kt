@@ -19,9 +19,4 @@ object AppModule {
     @DefaultUnknown
     fun provideDefaultUnknown(@ApplicationContext ctx: Context): String =
         ctx.getString(R.string.default_unknown)
-
-    @Provides
-    @DefaultImage
-    fun provideDefaultImage(@ApplicationContext ctx: Context): String =
-        ctx.getString(R.string.default_image_url)
 }

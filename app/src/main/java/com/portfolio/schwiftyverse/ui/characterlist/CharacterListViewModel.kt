@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.portfolio.schwiftyverse.R
 import com.portfolio.schwiftyverse.model.CharacterModel
+import com.portfolio.schwiftyverse.model.SyncState
 import com.portfolio.schwiftyverse.repository.CharacterRepository
+import com.portfolio.schwiftyverse.repository.SyncStatusRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +21,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CharacterListViewModel @Inject constructor(
-    private val characterRepository: CharacterRepository
+    private val characterRepository: CharacterRepository,
+    private val syncStatusRepository: SyncStatusRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -37,7 +40,8 @@ class CharacterListViewModel @Inject constructor(
         _genderFilter,
         _speciesFilter,
         _typeFilter,
-        _timeoutError
+        _timeoutError,
+        syncStatusRepository.getSyncState()
     ) { results ->
 
         val timeoutError = results[6] as Int?
@@ -52,6 +56,7 @@ class CharacterListViewModel @Inject constructor(
         val gender = results[3] as String
         val species = results[4] as String
         val type = results[5] as String
+        val syncState = results[7] as SyncState
 
         val filteredList = charactersFromDb.filter { character ->
             (query.isEmpty() || character.name.contains(query, ignoreCase = true)) &&
@@ -72,7 +77,8 @@ class CharacterListViewModel @Inject constructor(
             statusFilter = status,
             genderFilter = gender,
             speciesFilter = species,
-            typeFilter = type
+            typeFilter = type,
+            syncState = syncState
         )
     }.stateIn(
         scope = viewModelScope,
@@ -101,7 +107,7 @@ class CharacterListViewModel @Inject constructor(
         }
     }
 
-    fun retryLoad() {
+        fun retryLoad() {
         _timeoutError.value = null
 
         viewModelScope.launch {

@@ -5,7 +5,6 @@ import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.portfolio.schwiftyverse.di.DefaultImage
 import com.portfolio.schwiftyverse.di.DefaultUnknown
 import com.portfolio.schwiftyverse.local.CharacterDao
 import com.portfolio.schwiftyverse.local.toDomainModel
@@ -24,12 +23,11 @@ class CharacterRepositoryImpl @Inject constructor(
     private val characterDao: CharacterDao,
     @ApplicationContext private val context: Context,
     @DefaultUnknown private val defaultUnknown: String,
-    @DefaultImage private val defaultImage: String
 ) : CharacterRepository {
 
     override fun getCharactersStream(): Flow<List<CharacterModel>> {
         return characterDao.getCharactersStream().map { entities ->
-            entities.map { it.toDomainModel(defaultUnknown, defaultImage) }
+            entities.map { it.toDomainModel(defaultUnknown) }
         }
     }
 
@@ -49,12 +47,12 @@ class CharacterRepositoryImpl @Inject constructor(
         val localCharacter = characterDao.getCharacterById(id)
 
         if (localCharacter != null) {
-            return Result.success(localCharacter.toDomainModel(defaultUnknown, defaultImage))
+            return Result.success(localCharacter.toDomainModel(defaultUnknown))
         }
 
         return try {
             val dto = apiService.getCharacterById(id)
-            val character = dto.toDomainModel(defaultUnknown, defaultImage)
+            val character = dto.toDomainModel(defaultUnknown)
             characterDao.upsertAll(listOf(character.toEntity()))
             Result.success(character)
         } catch (e: Exception) {

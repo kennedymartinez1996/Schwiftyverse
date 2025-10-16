@@ -4,15 +4,14 @@ import com.portfolio.schwiftyverse.model.CharacterModel
 
 
 fun CharacterEntity.toDomainModel(
-    defaultUnknown: String,
-    defaultImageUrl: String
+    defaultUnknown: String
 ): CharacterModel {
     return CharacterModel(
         id = id,
         name = name,
         status = status,
         species = species,
-        imageUrl = imageUrl.ifEmpty { defaultImageUrl },
+        imageUrl = imageUrl,
         gender = gender,
         origin = origin,
         lastKnownLocation = lastKnownLocation.ifEmpty { defaultUnknown },

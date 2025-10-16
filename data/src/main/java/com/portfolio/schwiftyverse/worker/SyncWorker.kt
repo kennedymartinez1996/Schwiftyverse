@@ -7,17 +7,19 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import coil.ImageLoader
 import coil.request.ImageRequest
-import com.portfolio.schwiftyverse.di.DefaultImage
 import com.portfolio.schwiftyverse.di.DefaultUnknown
 import com.portfolio.schwiftyverse.local.AppDatabase
 import com.portfolio.schwiftyverse.local.CharacterDao
 import com.portfolio.schwiftyverse.local.toEntity
 import com.portfolio.schwiftyverse.model.CharacterModel
+import com.portfolio.schwiftyverse.model.SyncState
 import com.portfolio.schwiftyverse.remote.ApiService
 import com.portfolio.schwiftyverse.remote.toDomainModel
+import com.portfolio.schwiftyverse.repository.SyncStatusRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
+import java.util.Date
 
 @HiltWorker
 class SyncWorker @AssistedInject constructor(
@@ -27,8 +29,8 @@ class SyncWorker @AssistedInject constructor(
     private val characterDao: CharacterDao,
     private val appDatabase: AppDatabase,
     private val imageLoader: ImageLoader,
-    @DefaultUnknown private val defaultUnknown: String,
-    @DefaultImage private val defaultImage: String
+    private val syncStatusRepository: SyncStatusRepository,
+    @DefaultUnknown private val defaultUnknown: String
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -36,14 +38,19 @@ class SyncWorker @AssistedInject constructor(
             val remoteCharacters = mutableListOf<CharacterModel>()
             var page = 1
             var hasNext = true
+            var totalPages = 1
             while (hasNext) {
                 val response = apiService.getCharacters(page = page, name = null)
+                totalPages = response.info?.pages ?: totalPages
                 val characters =
-                    response.results?.map { it.toDomainModel(defaultUnknown, defaultImage) }
+                    response.results?.map { it.toDomainModel(defaultUnknown) }
                         ?: emptyList()
                 if (characters.isNotEmpty()) {
                     remoteCharacters.addAll(characters)
                 }
+
+                val progress = ((page.toFloat() / totalPages.toFloat()) * 100).toInt()
+                syncStatusRepository.updateSyncState(SyncState.Syncing(progress))
 
                 hasNext = response.info?.next != null
                 if (hasNext) page++
@@ -70,10 +77,11 @@ class SyncWorker @AssistedInject constructor(
                     imageLoader.enqueue(request)
                 }
             }
-
+            syncStatusRepository.updateSyncState(SyncState.Success(Date()))
             return Result.success()
 
         } catch (e: Exception) {
+            syncStatusRepository.updateSyncState(SyncState.Failed)
             return Result.failure()
         }
     }
