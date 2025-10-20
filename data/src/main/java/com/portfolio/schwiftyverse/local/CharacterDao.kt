@@ -25,4 +25,19 @@ interface CharacterDao {
 
     @Delete
     suspend fun deleteCharacters(characters: List<CharacterEntity>)
+
+    @Query(
+        """
+    SELECT * FROM characters
+    WHERE
+        (:name = '' OR name LIKE '%' || :name || '%') AND
+        (:status = '' OR status = :status) AND
+        (:gender = '' OR gender = :gender)
+"""
+    )
+    fun getFilteredCharactersStream(
+        name: String,
+        status: String,
+        gender: String
+    ): Flow<List<CharacterEntity>>
 }

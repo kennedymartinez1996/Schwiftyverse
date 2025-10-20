@@ -125,4 +125,63 @@ class CharacterDaoTest {
         lastKnownLocation = lastKnownLocation,
         type = type
     )
+
+    @Test
+    fun getFilteredCharactersStream_withMultipleFilters_returnsCorrectSubset() = runTest {
+        dao.upsertAll(
+            listOf(
+                createTestCharacterEntity(
+                    id = 1,
+                    name = "Rick Sanchez",
+                    status = "Alive",
+                    gender = "Male",
+                    species = "Human"
+                ),
+                createTestCharacterEntity(
+                    id = 2,
+                    name = "Morty Smith",
+                    status = "Alive",
+                    gender = "Male"
+                ),
+                createTestCharacterEntity(
+                    id = 3,
+                    name = "Summer Smith",
+                    status = "Alive",
+                    gender = "Female"
+                ),
+                createTestCharacterEntity(
+                    id = 4,
+                    name = "Birdperson",
+                    status = "Dead",
+                    gender = "Male",
+                    species = "Bird-Person"
+                )
+            )
+        )
+
+        val results = dao.getFilteredCharactersStream(
+            name = "",
+            status = "Alive",
+            gender = "Male"
+        ).first()
+
+        assertEquals(2, results.size)
+
+        val names = results.map { it.name }.toSet()
+        assertTrue(names.contains("Rick Sanchez"))
+        assertTrue(names.contains("Morty Smith"))
+    }
+
+    @Test
+    fun getFilteredCharactersStream_whenNoMatch_returnsEmptyList() = runTest {
+        dao.upsertAll(listOf(createTestCharacterEntity(id = 1, name = "Rick Sanchez")))
+
+        val results = dao.getFilteredCharactersStream(
+            name = "Morty",
+            status = "",
+            gender = ""
+        ).first()
+
+        assertTrue(results.isEmpty())
+    }
 }

@@ -195,7 +195,11 @@ class CharacterListViewModelTest {
     @Test
     fun `when db is empty and sync is in progress, isLoading is true`() = runTest {
         every { fakeCharacterRepository.getCharactersStream() } returns flowOf(emptyList<CharacterModel>())
-        every { fakeSyncStatusRepository.getSyncState() } returns MutableStateFlow(SyncState.Syncing(50))
+        every { fakeSyncStatusRepository.getSyncState() } returns MutableStateFlow(
+            SyncState.Syncing(
+                50
+            )
+        )
 
         viewModel = CharacterListViewModel(fakeCharacterRepository, fakeSyncStatusRepository)
 
@@ -222,5 +226,57 @@ class CharacterListViewModelTest {
             assertEquals(false, state.isLoading)
             assertTrue(state.syncState is SyncState.Failed)
         }
+    }
+
+    @Test
+    fun `search with partial and case-insensitive query returns correct results`() = runTest {
+        viewModel = CharacterListViewModel(fakeCharacterRepository, fakeSyncStatusRepository)
+
+        viewModel.uiState.test {
+            skipItems(1)
+            awaitItem()
+
+            viewModel.onSearchQueryChanged("person")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val filteredState = awaitItem()
+            assertEquals(1, filteredState.characters.size)
+            assertEquals("Birdperson", filteredState.characters.first().name)
+        }
+    }
+
+    @Test
+    fun `initial state when data arrives transitions from loading to success`() = runTest {
+        val dataFlow = MutableStateFlow<List<CharacterModel>>(emptyList())
+        every { fakeCharacterRepository.getCharactersStream() } returns dataFlow
+        every { fakeSyncStatusRepository.getSyncState() } returns MutableStateFlow(
+            SyncState.Syncing(
+                0
+            )
+        )
+
+        viewModel = CharacterListViewModel(fakeCharacterRepository, fakeSyncStatusRepository)
+
+        viewModel.uiState.test {
+            skipItems(1)
+
+            val loadingState = awaitItem()
+            assertTrue(loadingState.isLoading)
+            assertTrue(loadingState.characters.isEmpty())
+
+            dataFlow.value = testCharacters
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val successState = awaitItem()
+            assertEquals(false, successState.isLoading)
+            assertEquals(4, successState.characters.size)
+        }
+    }
+
+    @Test
+    fun `init when viewmodel is created triggers initial sync`() = runTest {
+        viewModel = CharacterListViewModel(fakeCharacterRepository, fakeSyncStatusRepository)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { fakeCharacterRepository.triggerSync() }
     }
 }
