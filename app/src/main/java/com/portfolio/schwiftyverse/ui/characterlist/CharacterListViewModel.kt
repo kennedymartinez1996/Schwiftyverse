@@ -69,8 +69,11 @@ class CharacterListViewModel @Inject constructor(
         val isAnyFilterActive =
             query.isNotEmpty() || status.isNotEmpty() || gender.isNotEmpty() || species.isNotEmpty() || type.isNotEmpty()
 
+        val isLoading = charactersFromDb.isEmpty() && !isAnyFilterActive &&
+                (syncState is SyncState.Syncing || syncState is SyncState.NotStarted)
+
         CharacterListState(
-            isLoading = charactersFromDb.isEmpty() && !isAnyFilterActive,
+            isLoading = isLoading,
             characters = filteredList,
             noResultsFound = filteredList.isEmpty() && isAnyFilterActive,
             searchQuery = query,
@@ -83,7 +86,7 @@ class CharacterListViewModel @Inject constructor(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = CharacterListState(isLoading = true)
+        initialValue = CharacterListState(isLoading = true, syncState = SyncState.NotStarted)
     )
 
     init {
@@ -96,7 +99,7 @@ class CharacterListViewModel @Inject constructor(
     fun startTimeoutWatcher() {
         viewModelScope.launch {
             try {
-                withTimeout(40_000L) {
+                withTimeout(15_000L) {
                     uiState.first { !it.isLoading }
                 }
             } catch (e: TimeoutCancellationException) {
