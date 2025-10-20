@@ -1,6 +1,6 @@
 # Schwiftyverse - A Rick and Morty Character Explorer
 
-<img width="575" height="194" alt="image" src="https://github.com/user-attachments/assets/53a019b5-c324-4a59-bb38-dd4586052dd0" />
+<img width="575" height="300" alt="image" src="/ImageApp.jpg" />
 
 
 *Schwiftyverse* is a modern Android application built to showcase a robust, offline-first architecture for browsing characters from the Rick and Morty TV show. Developed as a technical demonstration for senior-level Android positions, this project emphasizes clean architecture, reactive programming, and a high-quality user experience.
